@@ -233,205 +233,205 @@ def clean_results():
         f.truncate()
         f.close()
         if (os.path.exists('/home/pi/SERIAL_UPLOAD/pi_serial_upload.sh') == True):
-                f = open('/home/pi/SERIAL_UPLOAD/serial_upload_results.txt', 'w')
-                f.truncate()
-                f.close()
-                f = open('/home/pi/SERIAL_UPLOAD/serial_upload_results_temp.txt', 'w')
-                f.truncate()
-                f.close()        
+            f = open('/home/pi/SERIAL_UPLOAD/serial_upload_results.txt', 'w')
+            f.truncate()
+            f.close()
+            f = open('/home/pi/SERIAL_UPLOAD/serial_upload_results_temp.txt', 'w')
+            f.truncate()
+            f.close()        
         
 def program():
-        #GPIO.setup(PGM_SWITCH, GPIO.IN)
-	GPIO.output(PGM_SWITCH, GPIO.HIGH)
-	time.sleep(.1)        
-        clean_results()
-        #command = "/usr/bin/sudo ./pi_program.sh"
-        #command = "sudo ./pi_program.sh"
-        command = "sh /home/pi/pi_program.sh"
-        #command = "/usr/bin/sudo avrdude -p atmega328p -C /home/pi/avrdude_gpio.conf -c pi_1 -D -e 2>output1.txt"
-        #command = "/usr/bin/sudo dir"
-        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-        output = process.communicate()[0]
-        print(output)
-        print("...programming done.")
-        #GPIO.setup(PGM_SWITCH, GPIO.OUT)
-	GPIO.output(PGM_SWITCH, GPIO.LOW) # LOW is OFF, this is active high, hardware has 10K pullup
+    #GPIO.setup(PGM_SWITCH, GPIO.IN)
+    GPIO.output(PGM_SWITCH, GPIO.HIGH)
+    time.sleep(.1)        
+    clean_results()
+    #command = "/usr/bin/sudo ./pi_program.sh"
+    #command = "sudo ./pi_program.sh"
+    command = "sh /home/pi/pi_program.sh"
+    #command = "/usr/bin/sudo avrdude -p atmega328p -C /home/pi/avrdude_gpio.conf -c pi_1 -D -e 2>output1.txt"
+    #command = "/usr/bin/sudo dir"
+    process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    output = process.communicate()[0]
+    print(output)
+    print("...programming done.")
+    #GPIO.setup(PGM_SWITCH, GPIO.OUT)
+    GPIO.output(PGM_SWITCH, GPIO.LOW) # LOW is OFF, this is active high, hardware has 10K pullup
         
 
 def killall_avrdude():
-        command = "sudo killall avrdude"
-        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-        output = process.communicate()[0]
-        print(output)
-        print("...killing all avrdude.")	
+    command = "sudo killall avrdude"
+    process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    output = process.communicate()[0]
+    print(output)
+    print("...killing all avrdude.")    
 
 def program_serial():
-        serial_hopeful = False
-        print("serial programming beginning...")
-        #command = "bash /home/pi/SERIAL_UPLOAD/pi_serial_upload.sh" #Use BASH for more funcitonality (if coniditionsals etc), but be warned this can add 4-5 seconds before the command begins running
-        command = "sh /home/pi/SERIAL_UPLOAD/pi_serial_upload.sh" # default to "SH" for immediately running command - useful to still work with serial timeout failure feature
-        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-        #output = process.communicate()[0]
-        #print output
-        time.sleep(1.5) # WAIT for serial upload to either show successful ping to target (or to not, and indicate that this isn't very hopeful)
-        shutil.copy('/home/pi/SERIAL_UPLOAD/serial_upload_results.txt', '/home/pi/SERIAL_UPLOAD/serial_upload_results_temp.txt')
-        f_temp = open('/home/pi/SERIAL_UPLOAD/serial_upload_results_temp.txt', 'r')
-        for line in f_temp:
-                if 'avrdude: AVR device initialized and ready to accept instructions' in line:
-                        serial_hopeful = True
-                        print("Serial Upload in progress and looking hopeful :)")
-                        output = process.communicate()[0] #This basically makes us what until the communication from the programming subprocess is done
-                        print("serial upload done.")
-        if (serial_hopeful == False):
-                process.terminate()
-		killall_avrdude()
-                print("Serial Upload failure... killing subprocess and moving on")
+    serial_hopeful = False
+    print("serial programming beginning...")
+    #command = "bash /home/pi/SERIAL_UPLOAD/pi_serial_upload.sh" #Use BASH for more funcitonality (if coniditionsals etc), but be warned this can add 4-5 seconds before the command begins running
+    command = "sh /home/pi/SERIAL_UPLOAD/pi_serial_upload.sh" # default to "SH" for immediately running command - useful to still work with serial timeout failure feature
+    process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    #output = process.communicate()[0]
+    #print output
+    time.sleep(1.5) # WAIT for serial upload to either show successful ping to target (or to not, and indicate that this isn't very hopeful)
+    shutil.copy('/home/pi/SERIAL_UPLOAD/serial_upload_results.txt', '/home/pi/SERIAL_UPLOAD/serial_upload_results_temp.txt')
+    f_temp = open('/home/pi/SERIAL_UPLOAD/serial_upload_results_temp.txt', 'r')
+    for line in f_temp:
+        if 'avrdude: AVR device initialized and ready to accept instructions' in line:
+            serial_hopeful = True
+            print("Serial Upload in progress and looking hopeful :)")
+            output = process.communicate()[0] #This basically makes us what until the communication from the programming subprocess is done
+            print("serial upload done.")
+    if (serial_hopeful == False):
+        process.terminate()
+        killall_avrdude()
+        print("Serial Upload failure... killing subprocess and moving on")
                         
 
 def parse_results():
-        #variables to store success/failure of each programming step
-        hfuse = False
-        lfuse = False
-        efuse = False
-        flash = False
-        lock = False
-        global LOCK_BITS_PASS
-        LOCK_BITS_PASS = False
-        hash_verified_count = 0 # need to see 3 of these lines in the programming readout when programming an ESP32 chip
-        f = open('/home/pi/fuse_results.txt', 'r')
-        for line in f:
-                if 'avrdude: 1 bytes of hfuse verified' in line:
-                        print(line)
-                        hfuse = True
-                elif 'avrdude: 1 bytes of lfuse verified' in line:
-                        print(line)
-                        lfuse = True
-                elif 'avrdude: 1 bytes of efuse verified' in line:
-                        print(line)
-                        efuse = True
-                elif 'avrdude: AVR device not responding' in line:
-                        print(line)
-        f.close()
+    #variables to store success/failure of each programming step
+    hfuse = False
+    lfuse = False
+    efuse = False
+    flash = False
+    lock = False
+    global LOCK_BITS_PASS
+    LOCK_BITS_PASS = False
+    hash_verified_count = 0 # need to see 3 of these lines in the programming readout when programming an ESP32 chip
+    f = open('/home/pi/fuse_results.txt', 'r')
+    for line in f:
+        if 'avrdude: 1 bytes of hfuse verified' in line:
+            print(line)
+            hfuse = True
+        elif 'avrdude: 1 bytes of lfuse verified' in line:
+            print(line)
+            lfuse = True
+        elif 'avrdude: 1 bytes of efuse verified' in line:
+            print(line)
+            efuse = True
+        elif 'avrdude: AVR device not responding' in line:
+            print(line)
+    f.close()
 
-        f = open('/home/pi/flash_results.txt', 'r')
-        FLASH_SIZE = '00000'    # the flash size can vary slightly depending on the hex file (I think)
-                                # I've seen 32652, 32768, and 32650 in the three examples I've tried,
-                                # So pulling in this variable became necessary to use in verifying the correct message
-                                # when parsing flash_results.txt
-        for line in f:
-                if 'avrdude: writing flash (' in line:  # This is the line that contains the flash file size
-                                                        # The complete line looks like this:
-                                                        # "avrdude: writing flash (32670 bytes):"
-                        FLASH_SIZE = line[24:(line.find('byte')-1)]
-                        print(f'FLASH_SIZE: {FLASH_SIZE}')
-                elif 'avrdude: ' + FLASH_SIZE + ' bytes of flash verified' in line: # Look for complete verification line
-                        print(line)
-                        flash = True                       
-                elif 'avrdude: 1 bytes of lock verified' in line:
-                        print(line)
-                        lock = True
-                        LOCK_BITS_PASS = True
-                elif 'avrdude: AVR device not responding' in line:
-                        print(line)
-                elif 'Hash of data verified.' in line:
-                        hash_verified_count += 1
-                        print(line)
-        f.close()        
+    f = open('/home/pi/flash_results.txt', 'r')
+    FLASH_SIZE = '00000'    # the flash size can vary slightly depending on the hex file (I think)
+                            # I've seen 32652, 32768, and 32650 in the three examples I've tried,
+                            # So pulling in this variable became necessary to use in verifying the correct message
+                            # when parsing flash_results.txt
+    for line in f:
+        if 'avrdude: writing flash (' in line:  # This is the line that contains the flash file size
+                                                    # The complete line looks like this:
+                                                    # "avrdude: writing flash (32670 bytes):"
+            FLASH_SIZE = line[24:(line.find('byte')-1)]
+            print(f'FLASH_SIZE: {FLASH_SIZE}')
+        elif 'avrdude: ' + FLASH_SIZE + ' bytes of flash verified' in line: # Look for complete verification line
+            print(line)
+            flash = True                       
+        elif 'avrdude: 1 bytes of lock verified' in line:
+            print(line)
+            lock = True
+            LOCK_BITS_PASS = True
+        elif 'avrdude: AVR device not responding' in line:
+            print(line)
+        elif 'Hash of data verified.' in line:
+            hash_verified_count += 1
+            print(line)
+    f.close()        
 
-        ## display results on all 6 stat LEDs
-        if(hash_verified_count == 3): # this means we are programming an ESP32, and only care to light up the flash_P led.
-                GPIO.output(FLASH_P, GPIO.HIGH)
-        else: # everything not an ESP32 - ATmega328 and mega2560 supported
-                if((hfuse == True) and (lfuse == True) and (efuse == True)):
-                        GPIO.output(FUSE_P, GPIO.HIGH)
-                else:
-                        GPIO.output(FUSE_F, GPIO.HIGH)
-                if(flash == True):
-                        GPIO.output(FLASH_P, GPIO.HIGH)
-                else:
-                        GPIO.output(FLASH_F, GPIO.HIGH)
-                if(lock == True):
-                        GPIO.output(LOCK_P, GPIO.HIGH)
-                else:
-                        GPIO.output(LOCK_F, GPIO.HIGH)
+    ## display results on all 6 stat LEDs
+    if(hash_verified_count == 3): # this means we are programming an ESP32, and only care to light up the flash_P led.
+        GPIO.output(FLASH_P, GPIO.HIGH)
+    else: # everything not an ESP32 - ATmega328 and mega2560 supported
+        if((hfuse == True) and (lfuse == True) and (efuse == True)):
+            GPIO.output(FUSE_P, GPIO.HIGH)
+        else:
+            GPIO.output(FUSE_F, GPIO.HIGH)
+        if(flash == True):
+            GPIO.output(FLASH_P, GPIO.HIGH)
+        else:
+            GPIO.output(FLASH_F, GPIO.HIGH)
+        if(lock == True):
+            GPIO.output(LOCK_P, GPIO.HIGH)
+        else:
+            GPIO.output(LOCK_F, GPIO.HIGH)
 
 def parse_results_serial():
-        #variables to store success/failure of serial flash writing
-        # NOTE, I am NOT verifying flash on serial upload to decrease programming time by 50%
-        # So we are going to show a successful serail program, but only seeing that it was written
-        serial_flash_written = False
+    #variables to store success/failure of serial flash writing
+    # NOTE, I am NOT verifying flash on serial upload to decrease programming time by 50%
+    # So we are going to show a successful serail program, but only seeing that it was written
+    serial_flash_written = False
 
-        f = open('/home/pi/SERIAL_UPLOAD/serial_upload_results.txt', 'r')
-        FLASH_SIZE = '00000'    # the flash size can vary
+    f = open('/home/pi/SERIAL_UPLOAD/serial_upload_results.txt', 'r')
+    FLASH_SIZE = '00000'    # the flash size can vary
 
-        for line in f:
-                if 'avrdude: writing flash (' in line:  # This is the line that contains the flash file size
-                                                        # The complete line looks like this:
-                                                        # "avrdude: writing flash (32670 bytes):"
-                        FLASH_SIZE = line[24:(line.find('byte')-1)]
-                        print(f'FLASH_SIZE: {FLASH_SIZE}')
-                elif 'avrdude: ' + FLASH_SIZE + ' bytes of flash written' in line: # Look for complete line 
-                        print(line)
-                        serial_flash_written = True                       
-                elif 'avrdude: AVR device not responding' in line:
-                        print(line)
-        f.close()        
+    for line in f:
+        if 'avrdude: writing flash (' in line:  # This is the line that contains the flash file size
+                                            # The complete line looks like this:
+                                            # "avrdude: writing flash (32670 bytes):"
+            FLASH_SIZE = line[24:(line.find('byte')-1)]
+            print(f'FLASH_SIZE: {FLASH_SIZE}')
+        elif 'avrdude: ' + FLASH_SIZE + ' bytes of flash written' in line: # Look for complete line 
+            print(line)
+            serial_flash_written = True                       
+        elif 'avrdude: AVR device not responding' in line:
+            print(line)
+    f.close()        
 
-        ## display results on serial upload LEDs
+    ## display results on serial upload LEDs
 
-        if(serial_flash_written == True):
-            GPIO.output(SERIAL_P, GPIO.HIGH)
-            print('Serial Write success!!')
-        else:
-            GPIO.output(SERIAL_F, GPIO.HIGH)                               
+    if(serial_flash_written == True):
+        GPIO.output(SERIAL_P, GPIO.HIGH)
+        print('Serial Write success!!')
+    else:
+        GPIO.output(SERIAL_F, GPIO.HIGH)                               
         
 def toggle_stat_led():
-        global STATLED_ON
-        if (STATLED_ON):
-                GPIO.output(STAT, GPIO.LOW)
-                STATLED_ON = False
-        else:
-                GPIO.output(STAT, GPIO.HIGH)
-                STATLED_ON = True
+    global STATLED_ON
+    if (STATLED_ON):
+        GPIO.output(STAT, GPIO.LOW)
+        STATLED_ON = False
+    else:
+        GPIO.output(STAT, GPIO.HIGH)
+        STATLED_ON = True
 
 def blink_all():
-        all_leds_on()
-        time.sleep(.1)
-        all_leds_off()
+    all_leds_on()
+    time.sleep(.1)
+    all_leds_off()
 
 time.sleep(3) # let 3.3V line settle to avoid accidental shutdowns
 while True:
-        time.sleep(.1)
-        stat_blink_counter += 1
-        if(stat_blink_counter > 5):
-                toggle_stat_led()
-                stat_blink_counter = 0
-        
-        update_firmware_and_bash_and_test_dot_py()
-        #print GPIO.input(SHUTDOWN)
-        
-        if GPIO.input(SHUTDOWN) == False:
-                counter = 0
-                while GPIO.input(SHUTDOWN) == False:
-                        counter += 1
-                        print(counter)
-                        blink_all()
-                        time.sleep(.5)
-                        if counter > 4:
-                                all_leds_on()
-                                shut_down()
+    time.sleep(.1)
+    stat_blink_counter += 1
+    if(stat_blink_counter > 5):
+        toggle_stat_led()
+        stat_blink_counter = 0
+    
+    update_firmware_and_bash_and_test_dot_py()
+    #print GPIO.input(SHUTDOWN)
+    
+    if GPIO.input(SHUTDOWN) == False:
+        counter = 0
+        while GPIO.input(SHUTDOWN) == False:
+            counter += 1
+            print(counter)
+            blink_all()
+            time.sleep(.5)
+            if counter > 4:
+                all_leds_on()
+                shut_down()
 
-        if GPIO.input(CAPSENSE) == True:
-                blink_all()
-                GPIO.output(STAT, GPIO.HIGH) #indicate programming attempt
-                program()
-                parse_results()
-                if ((os.path.exists('/home/pi/SERIAL_UPLOAD/pi_serial_upload.sh') == True) and (LOCK_BITS_PASS == True)):
-                        # time.sleep(1) # Delay to allow com port enumeration.
-                        # Note, this delay is only needed with micros that have USB capabilities (like the atmega32u4)
-                        program_serial()
-                        parse_results_serial()
-                        time.sleep(3) # led leds stay on for 3 secs
-                else:
-                        time.sleep(3) # led leds stay on for 3 secs
-                all_leds_off()
+    if GPIO.input(CAPSENSE) == True:
+        blink_all()
+        GPIO.output(STAT, GPIO.HIGH) #indicate programming attempt
+        program()
+        parse_results()
+        if ((os.path.exists('/home/pi/SERIAL_UPLOAD/pi_serial_upload.sh') == True) and (LOCK_BITS_PASS == True)):
+            # time.sleep(1) # Delay to allow com port enumeration.
+            # Note, this delay is only needed with micros that have USB capabilities (like the atmega32u4)
+            program_serial()
+            parse_results_serial()
+            time.sleep(3) # led leds stay on for 3 secs
+        else:
+            time.sleep(3) # led leds stay on for 3 secs
+        all_leds_off()
