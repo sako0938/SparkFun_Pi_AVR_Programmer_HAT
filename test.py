@@ -16,6 +16,7 @@ import serial
 import time
 import RPi.GPIO as GPIO
 import filecmp
+import subprocess
 
 STAT = 7
 FUSE_P = 15
@@ -122,10 +123,9 @@ def blink_circle():
 
 def relaunch_python():
         command = "sh /home/pi/relaunch_python.sh"
-        import subprocess
         process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
         output = process.communicate()[0]
-        print output     
+        print(output)
         
 def update_firmware_and_bash_and_test_dot_py():
         global new_hex
@@ -160,7 +160,7 @@ def update_firmware_and_bash_and_test_dot_py():
                         if 'test.py' in tempstring:
                                 #print 'new test.py file found!!'
                                 if(filecmp.cmp(tempstring, '/home/pi/test.py') == False):
-                                               new_test_dot_py = True
+                                    new_test_dot_py = True
                                 #print tempstring
                                 test_dot_py_path_media = tempstring                                  
         if(new_hex == False):
@@ -168,62 +168,62 @@ def update_firmware_and_bash_and_test_dot_py():
                 copy_flag = False
         elif((new_hex == True) and (copy_flag == False)):
                 blink_circle()
-                print 'new hex found'
-                print firmware_path_media
+                print('new hex found')
+                print(firmware_path_media)
                 # first, delete the old hex file
                 for root, dirs, files in os.walk('/home/pi'):
                         for name in files:
                                 #print (os.path.join(root, name))
                                 old_firmware_path = (os.path.join(root, name))
                                 if 'hex' in old_firmware_path and 'SERIAL_UPLOAD' not in old_firmware_path:
-                                        print 'old hex file found!!'
-                                        print 'deleting old firmware file:'
-                                        print old_firmware_path
+                                        print('old hex file found!!')
+                                        print('deleting old firmware file:')
+                                        print(old_firmware_path)
                                         os.remove(old_firmware_path)
-                                        print 'done'
+                                        print('done')
                 copy_flag = True # to avoid copying the file EVERY loop, we only need to do it once
-                print 'copying hex file to local folder /home/pi'
+                print('copying hex file to local folder /home/pi')
                 shutil.copy(firmware_path_media, '/home/pi')
-                print 'done'
+                print('done')
         if(new_bash == False):
                 #print 'no new bash'
                 copy_flag_bash = False
         elif((new_bash == True) and (copy_flag_bash == False)):
                 blink_circle()
-                print 'new bash found'
-                print bash_path_media
+                print('new bash found')
+                print(bash_path_media)
                 # first, delete the old bash file
-                print 'deleting old bash file: /home/pi/pi_program.sh'
+                print('deleting old bash file: /home/pi/pi_program.sh')
                 os.remove('/home/pi/pi_program.sh')
-                print 'done'            
+                print('done')            
                 copy_flag_bash = True # to avoid copying the file EVERY loop, we only need to do it once
-                print 'copying bash file to local folder /home/pi'
+                print('copying bash file to local folder /home/pi')
                 shutil.copy(bash_path_media, '/home/pi')
-                print 'done'
+                print('done')
         if(new_test_dot_py == False):
                 #print 'no new bash'
                 copy_flag_test_dot_py = False
         elif((new_test_dot_py == True) and (copy_flag_test_dot_py == False)):
                 blink_circle()
-                print 'new test.py found'
-                print test_dot_py_path_media
+                print('new test.py found')
+                print(test_dot_py_path_media)
                 # first, delete the old bash file
-                print 'deleting old test.py file: /home/pi/test.py'
+                print('deleting old test.py file: /home/pi/test.py')
                 os.remove('/home/pi/test.py')
-                print 'done'            
+                print('done')   
                 copy_flag_test_dot_py = True # to avoid copying the file EVERY loop, we only need to do it once
-                print 'copying test.py file to local folder /home/pi'
+                print('copying test.py file to local folder /home/pi')
                 shutil.copy(test_dot_py_path_media, '/home/pi')
-                print 'done'
+                print('done')
                 relaunch_python()
                 
 def shut_down():
-        print "shutting down"
+        print("shutting down")
         command = "/usr/bin/sudo /sbin/shutdown -h now"
-        import subprocess
+        
         process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
         output = process.communicate()[0]
-        print output
+        print(output)
         
 def clean_results():
         f = open('/home/pi/fuse_results.txt', 'w')
@@ -250,29 +250,26 @@ def program():
         command = "sh /home/pi/pi_program.sh"
         #command = "/usr/bin/sudo avrdude -p atmega328p -C /home/pi/avrdude_gpio.conf -c pi_1 -D -e 2>output1.txt"
         #command = "/usr/bin/sudo dir"
-        import subprocess
         process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
         output = process.communicate()[0]
-        print output
-        print "...programming done."
+        print(output)
+        print("...programming done.")
         #GPIO.setup(PGM_SWITCH, GPIO.OUT)
 	GPIO.output(PGM_SWITCH, GPIO.LOW) # LOW is OFF, this is active high, hardware has 10K pullup
         
 
 def killall_avrdude():
         command = "sudo killall avrdude"
-        import subprocess
         process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
         output = process.communicate()[0]
-        print output
-        print "...killing all avrdude."	
+        print(output)
+        print("...killing all avrdude.")	
 
 def program_serial():
         serial_hopeful = False
-        print "serial programming beginning..."
+        print("serial programming beginning...")
         #command = "bash /home/pi/SERIAL_UPLOAD/pi_serial_upload.sh" #Use BASH for more funcitonality (if coniditionsals etc), but be warned this can add 4-5 seconds before the command begins running
         command = "sh /home/pi/SERIAL_UPLOAD/pi_serial_upload.sh" # default to "SH" for immediately running command - useful to still work with serial timeout failure feature
-        import subprocess
         process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
         #output = process.communicate()[0]
         #print output
@@ -282,13 +279,13 @@ def program_serial():
         for line in f_temp:
                 if 'avrdude: AVR device initialized and ready to accept instructions' in line:
                         serial_hopeful = True
-                        print "Serial Upload in progress and looking hopeful :)"
+                        print("Serial Upload in progress and looking hopeful :)")
                         output = process.communicate()[0] #This basically makes us what until the communication from the programming subprocess is done
-                        print "serial upload done."
+                        print("serial upload done.")
         if (serial_hopeful == False):
                 process.terminate()
 		killall_avrdude()
-                print "Serial Upload failure... killing subprocess and moving on"
+                print("Serial Upload failure... killing subprocess and moving on")
                         
 
 def parse_results():
@@ -304,16 +301,16 @@ def parse_results():
         f = open('/home/pi/fuse_results.txt', 'r')
         for line in f:
                 if 'avrdude: 1 bytes of hfuse verified' in line:
-                        print line
+                        print(line)
                         hfuse = True
                 elif 'avrdude: 1 bytes of lfuse verified' in line:
-                        print line
+                        print(line)
                         lfuse = True
                 elif 'avrdude: 1 bytes of efuse verified' in line:
-                        print line
+                        print(line)
                         efuse = True
                 elif 'avrdude: AVR device not responding' in line:
-                        print line
+                        print(line)
         f.close()
 
         f = open('/home/pi/flash_results.txt', 'r')
@@ -326,19 +323,19 @@ def parse_results():
                                                         # The complete line looks like this:
                                                         # "avrdude: writing flash (32670 bytes):"
                         FLASH_SIZE = line[24:(line.find('byte')-1)]
-                        print 'FLASH_SIZE:' + FLASH_SIZE
+                        print(f'FLASH_SIZE: {FLASH_SIZE}')
                 elif 'avrdude: ' + FLASH_SIZE + ' bytes of flash verified' in line: # Look for complete verification line
-                        print line
+                        print(line)
                         flash = True                       
                 elif 'avrdude: 1 bytes of lock verified' in line:
-                        print line
+                        print(line)
                         lock = True
                         LOCK_BITS_PASS = True
                 elif 'avrdude: AVR device not responding' in line:
-                        print line
+                        print(line)
                 elif 'Hash of data verified.' in line:
                         hash_verified_count += 1
-                        print line
+                        print(line)
         f.close()        
 
         ## display results on all 6 stat LEDs
@@ -372,19 +369,19 @@ def parse_results_serial():
                                                         # The complete line looks like this:
                                                         # "avrdude: writing flash (32670 bytes):"
                         FLASH_SIZE = line[24:(line.find('byte')-1)]
-                        print 'FLASH_SIZE:' + FLASH_SIZE
+                        print(f'FLASH_SIZE: {FLASH_SIZE}')
                 elif 'avrdude: ' + FLASH_SIZE + ' bytes of flash written' in line: # Look for complete line 
-                        print line
+                        print(line)
                         serial_flash_written = True                       
                 elif 'avrdude: AVR device not responding' in line:
-                        print line
+                        print(line)
         f.close()        
 
         ## display results on serial upload LEDs
 
         if(serial_flash_written == True):
             GPIO.output(SERIAL_P, GPIO.HIGH)
-            print 'Serial Write success!!'
+            print('Serial Write success!!')
         else:
             GPIO.output(SERIAL_F, GPIO.HIGH)                               
         
@@ -417,7 +414,7 @@ while True:
                 counter = 0
                 while GPIO.input(SHUTDOWN) == False:
                         counter += 1
-                        print counter
+                        print(counter)
                         blink_all()
                         time.sleep(.5)
                         if counter > 4:
